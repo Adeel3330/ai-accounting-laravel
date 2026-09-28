@@ -41,12 +41,12 @@
   
   const sendMessage = (message) => {
     console.log(message,"payload");
+
+
     if (message.role === 'user') {
-      messages.value.role = 'user'
-      messages.value.content = message.content
+      messages.value.push(message);
     } else {
-      messages.value.role = 'assistant'
-      messages.value.content = message.content
+      messages.value.push(message);
     }
   };
   
