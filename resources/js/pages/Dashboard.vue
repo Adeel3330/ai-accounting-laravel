@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import AccountingChat from '@/components/Ai/Accounting/chat/index.vue';
 import { dashboard } from '@/routes';
 
 defineOptions({
@@ -41,7 +42,7 @@ defineOptions({
         <div
             class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
         >
-            <PlaceholderPattern />
+            <AccountingChat />
         </div>
     </div>
 </template>

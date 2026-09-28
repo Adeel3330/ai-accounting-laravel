@@ -11,9 +11,32 @@ class AccountingPromptController extends Controller
     //
     public function accountingPrompt(Request $request)
     {
-        $agent = AccountingAgent::make();
-         $response =   $agent->prompt($request->input('prompt'),[],null,env('AI_MODEL'),10000);
- 
-        return response()->json($response);
-    }   
+        $prompt = $request->input('prompt');
+        $request->validate([
+            'prompt' => 'required|string',
+        ]);
+        try {
+            
+            // $agent = AccountingAgent::make();
+            $response =   (new AccountingAgent())
+                ->prompt(
+                    $prompt,
+                    provider: "ollama",
+                    model: env('AI_MODEL'),
+                );
+
+            return response()->json([
+                'status' => 'success',
+                'prompt' => $request->input('prompt'),
+                'response' => (string) $response,
+
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage(),
+            ], 500);
+
+        }
+    }
 }

@@ -13,4 +13,5 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     Route::post('/accounting-prompt', [AccountingPromptController::class, 'accountingPrompt']);
+    Route::post('/chat', [AccountingPromptController::class, 'accountingPrompt']);
 });
