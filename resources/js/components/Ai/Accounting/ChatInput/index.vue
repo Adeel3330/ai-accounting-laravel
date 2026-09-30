@@ -3,15 +3,10 @@
     <form class="flex items-center justify-center w-full space-x-2" @submit.prevent="sendMessage">
       <input
         class="flex h-10 w-full rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2"
-        placeholder="Type your message"
-        v-model="message"
-        :disabled="loading"
-      >
-      <button
-        type="submit"
+        placeholder="Type your message" v-model="message" :disabled="loading">
+      <button type="submit"
         class="inline-flex items-center justify-center rounded-md text-sm font-medium text-[#f9fafb] disabled:pointer-events-none disabled:opacity-50 bg-black hover:bg-[#111827E6] h-10 px-4 py-2"
-        :disabled="loading || !message.trim()"
-      >
+        :disabled="loading || !message.trim()">
         Send
       </button>
     </form>
@@ -20,6 +15,7 @@
 
 <script setup>
 import { useApi } from '@/lib/useApi';
+import { parseSSEStream } from '@/lib/useSSE';
 import { ref } from 'vue';
 
 defineProps({
@@ -44,20 +40,41 @@ const sendMessage = async () => {
   message.value = '';
 
   try {
-    const response = await useApi().post('/v1/chat', { prompt }, { timeout: 300000 });
-
-    if (response.data?.status === 'error') {
-      emit('sendMessage', {
-        role: 'assistant',
-        content: response.data.message || 'Sorry, something went wrong. Please try again.',
-      });
-      return;
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/chat`,{
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    },
+    body: JSON.stringify({
+      prompt,
+    }),
+  });
+  console.log(response);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    emit('sendMessage', {
-      role: 'assistant',
-      content: response.data.response,
-    });
+    if (!response.body) {
+      throw new Error('Streaming is not supported by this browser.');
+    }
+
+    const reader = response.body.getReader();
+
+    let assistantMessage = '';
+
+    for await (const item of parseSSEStream(reader)) {
+      console.log('SSE ITEM:', item);
+
+      if (item.type === 'text_delta') {
+        assistantMessage += item.delta;
+
+        emit('sendMessage', {
+          role: 'assistant',
+          content: assistantMessage,
+        });
+      }
+    }
   } catch (error) {
     console.error(error);
     const message =

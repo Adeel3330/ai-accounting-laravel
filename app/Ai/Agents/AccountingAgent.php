@@ -48,6 +48,8 @@ class AccountingAgent implements Agent, Conversational, HasTools
      */
     public function tools(): iterable
     {
-        return [];
+        return [
+            
+        ];
     }
 }

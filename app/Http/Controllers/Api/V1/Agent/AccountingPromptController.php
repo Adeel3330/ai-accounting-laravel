@@ -5,6 +5,12 @@ namespace App\Http\Controllers\Api\V1\Agent;
 use App\Ai\Agents\AccountingAgent;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Laravel\Ai\Attributes\Model;
+use Laravel\Ai\Attributes\Provider;
+use Laravel\Ai\Enums\Lab;
+
+#[Provider(Lab::Ollama)]
+#[Model('llama3.2:1b')]
 
 class AccountingPromptController extends Controller
 {
@@ -16,8 +22,8 @@ class AccountingPromptController extends Controller
             'prompt' => 'required|string',
         ]);
         try {
-            $response = (new AccountingAgent())
-                ->prompt(
+             return $response = (new AccountingAgent())
+                ->stream(
                     $prompt,
                     provider: 'ollama',
                     model: env('AI_MODEL'),
