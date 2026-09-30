@@ -16,27 +16,24 @@ class AccountingPromptController extends Controller
             'prompt' => 'required|string',
         ]);
         try {
-            
-            // $agent = AccountingAgent::make();
-            $response =   (new AccountingAgent())
+            $response = (new AccountingAgent())
                 ->prompt(
                     $prompt,
-                    provider: "ollama",
+                    provider: 'ollama',
                     model: env('AI_MODEL'),
+                    timeout: (int) env('AI_TIMEOUT', 300),
                 );
 
             return response()->json([
                 'status' => 'success',
                 'prompt' => $request->input('prompt'),
                 'response' => (string) $response,
-
             ]);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => $th->getMessage(),
             ], 500);
-
         }
     }
 }

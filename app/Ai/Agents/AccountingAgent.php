@@ -16,6 +16,14 @@ class AccountingAgent implements Agent, Conversational, HasTools
     use Promptable;
 
     /**
+     * Ollama can take longer than the default 60s on cold model loads.
+     */
+    public function timeout(): int
+    {
+        return (int) env('AI_TIMEOUT', 300);
+    }
+
+    /**
      * Get the instructions that the agent should follow.
      */
     public function instructions(): Stringable|string

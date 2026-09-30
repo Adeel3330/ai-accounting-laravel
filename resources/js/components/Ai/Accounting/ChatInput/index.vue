@@ -44,16 +44,29 @@ const sendMessage = async () => {
   message.value = '';
 
   try {
-    const response = await useApi().post('/v1/chat', { prompt });
+    const response = await useApi().post('/v1/chat', { prompt }, { timeout: 300000 });
+
+    if (response.data?.status === 'error') {
+      emit('sendMessage', {
+        role: 'assistant',
+        content: response.data.message || 'Sorry, something went wrong. Please try again.',
+      });
+      return;
+    }
+
     emit('sendMessage', {
       role: 'assistant',
       content: response.data.response,
     });
   } catch (error) {
     console.error(error);
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      'Sorry, something went wrong. Please try again.';
     emit('sendMessage', {
       role: 'assistant',
-      content: 'Sorry, something went wrong. Please try again.',
+      content: message,
     });
   }
 };
