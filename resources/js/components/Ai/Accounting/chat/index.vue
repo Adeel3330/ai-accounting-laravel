@@ -14,10 +14,9 @@
   >
     <div
       v-if="isOpen"
-      style="box-shadow: 0 0 #0000, 0 0 #0000, 0 1px 2px 0 rgb(0 0 0 / 0.05);"
-      class="fixed bottom-[calc(4rem+1.5rem)] right-0 mr-4 bg-white p-6 rounded-lg border border-[#e5e7eb] w-[440px] h-[634px]"
+      class="fixed bottom-[calc(4rem+1.5rem)] right-4 z-50 flex h-[min(634px,calc(100vh-6rem))] w-[min(440px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl shadow-zinc-900/10"
     >
-      <AccountingChatHeader />
+      <AccountingChatHeader @close="toggleChat" />
 
       <AccountingChatMessages :messages="messages" :loading="loading" />
 
@@ -38,6 +37,7 @@ const messages = ref([
   {
     role: 'assistant',
     content: 'Hello, how can I help you today?',
+    streaming: false,
   },
 ]);
 const isOpen = ref(false);
@@ -46,13 +46,37 @@ const loading = ref(false);
 const sendMessage = (message) => {
   if (message.role === 'user') {
     loading.value = true;
+    messages.value.push({
+      role: 'user',
+      content: message.content,
+    });
+    messages.value.push({
+      role: 'assistant',
+      content: '',
+      streaming: true,
+    });
+    return;
   }
 
-  if (message.role === 'assistant') {
-    loading.value = false;
+  const last = messages.value[messages.value.length - 1];
+
+  if (last?.role === 'assistant') {
+    last.content = message.content;
+
+    if (message.done || message.error) {
+      last.streaming = false;
+      loading.value = false;
+    }
+
+    return;
   }
 
-  messages.value.push(message);
+  messages.value.push({
+    role: 'assistant',
+    content: message.content,
+    streaming: false,
+  });
+  loading.value = false;
 };
 
 const toggleChat = () => {

@@ -1,12 +1,19 @@
 <template>
-  <div class="flex items-center pt-0">
-    <form class="flex items-center justify-center w-full space-x-2" @submit.prevent="sendMessage">
-      <input
-        class="flex h-10 w-full rounded-md border border-[#e5e7eb] px-3 py-2 text-sm placeholder-[#6b7280] focus:outline-none focus:ring-2 focus:ring-[#9ca3af] disabled:cursor-not-allowed disabled:opacity-50 text-[#030712] focus-visible:ring-offset-2"
-        placeholder="Type your message" v-model="message" :disabled="loading">
-      <button type="submit"
-        class="inline-flex items-center justify-center rounded-md text-sm font-medium text-[#f9fafb] disabled:pointer-events-none disabled:opacity-50 bg-black hover:bg-[#111827E6] h-10 px-4 py-2"
-        :disabled="loading || !message.trim()">
+  <div class="border-t border-zinc-100 bg-white p-3">
+    <form class="flex items-end gap-2" @submit.prevent="sendMessage">
+      <textarea
+        v-model="message"
+        rows="1"
+        class="max-h-28 min-h-10 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+        placeholder="Type your message..."
+        :disabled="loading"
+        @keydown.enter.exact.prevent="sendMessage"
+      />
+      <button
+        type="submit"
+        class="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-50"
+        :disabled="loading || !message.trim()"
+      >
         Send
       </button>
     </form>
@@ -14,7 +21,6 @@
 </template>
 
 <script setup>
-import { useApi } from '@/lib/useApi';
 import { parseSSEStream } from '@/lib/useSSE';
 import { ref } from 'vue';
 
@@ -39,18 +45,18 @@ const sendMessage = async () => {
 
   message.value = '';
 
+  let assistantMessage = '';
+
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/chat`,{
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-    },
-    body: JSON.stringify({
-      prompt,
-    }),
-  });
-  console.log(response);
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/v1/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -61,29 +67,31 @@ const sendMessage = async () => {
 
     const reader = response.body.getReader();
 
-    let assistantMessage = '';
-
     for await (const item of parseSSEStream(reader)) {
-      console.log('SSE ITEM:', item);
-
-      if (item.type === 'text_delta') {
+      if (item.type === 'text_delta' && item.delta) {
         assistantMessage += item.delta;
-
         emit('sendMessage', {
           role: 'assistant',
           content: assistantMessage,
         });
       }
     }
-  } catch (error) {
-    console.error(error);
-    const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      'Sorry, something went wrong. Please try again.';
+
     emit('sendMessage', {
       role: 'assistant',
-      content: message,
+      content: assistantMessage || 'No response received.',
+      done: true,
+    });
+  } catch (error) {
+    console.error(error);
+    emit('sendMessage', {
+      role: 'assistant',
+      content:
+        error?.response?.data?.message ||
+        error?.message ||
+        'Sorry, something went wrong. Please try again.',
+      done: true,
+      error: true,
     });
   }
 };
